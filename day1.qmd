@@ -1,0 +1,40 @@
+---
+title: "day1"
+format: html
+editor: visual
+---
+
+## Part 1 Solution in R 
+
+Find the elf with the most calories
+
+```{r}
+library(tidyverse)
+library(readr)
+part1_dat <- read_lines("data/day1.txt")
+elf_num = 1
+df <- tibble(cal = part1_dat, 
+             elf_num = cumsum(part1_dat == "") + 1) %>% 
+  filter(cal != "") 
+
+tot_cal_per <- df %>% 
+  group_by(elf_num) %>% 
+  summarise(tot_cal = sum(as.numeric(cal)), .groups = "drop") 
+
+tot_cal_per %>% 
+  filter(tot_cal == max(tot_cal))
+
+```
+
+## Part 2 Solution in R 
+
+Get the sum of the top 3 elves with the most calories
+
+```{r}
+tot_cal_per %>% 
+  arrange(desc(tot_cal)) %>% 
+  slice(1:3) %>% 
+  summarise(overall = sum(tot_cal))
+```
+
+## 
