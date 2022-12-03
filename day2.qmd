@@ -1,0 +1,66 @@
+---
+title: "day2"
+format: html
+editor: visual
+---
+
+## Day 2 in R
+
+```{r}
+library(readr)
+library(tidyverse)
+
+df <- read_delim("data/day2.txt", delim = " ", col_names = FALSE, 
+           show_col_types = FALSE) %>% 
+  rename(opponent = X1, me = X2) %>% 
+  mutate(op_rps = case_when(opponent == "A" ~ "R",
+                            opponent == "B" ~ "P",
+                            opponent == "C" ~ "S",
+                            ),
+         me_rps = case_when(me == "X" ~ "R",
+                            me == "Y" ~ "P",
+                            me == "Z" ~ "S",
+                            ),
+    rps_val = case_when(me == "X" ~ 1,
+                             me == "Y" ~ 2,
+                             me == "Z" ~ 3),
+         win_val = case_when(op_rps == me_rps ~ 3,
+                             op_rps == "R" & me_rps == "P" ~ 6,
+                             op_rps == "P" & me_rps == "S" ~ 6,
+                             op_rps == "S" & me_rps == "R" ~ 6,
+                             TRUE ~ 0
+                             ),
+    round_val = rps_val + win_val)
+```
+
+```{r}
+df %>% 
+summarise(total = sum(round_val))
+```
+
+## Part 2 in R
+
+```{r}
+df %>% 
+  select(op_rps, me) %>% 
+  mutate(win_val = case_when(
+    me == "X" ~ 0,
+    me == "Y" ~ 3,
+    me == "Z" ~ 6,
+  ),
+  me_rps = case_when(
+    win_val == 3 ~ op_rps, 
+    (win_val == 6 & op_rps == "S") | (win_val == 0 & op_rps == "P") ~ "R",
+    (win_val == 6 & op_rps == "R") | (win_val == 0 & op_rps == "S") ~ "P",
+    (win_val == 6 & op_rps == "P") | (win_val == 0 & op_rps == "R") ~ "S"
+  ), 
+  rps_val = case_when(
+    me_rps == "R" ~ 1,
+    me_rps == "P" ~ 2,
+    me_rps == "S" ~ 3
+  )
+  )  %>% 
+  summarise(total = sum(win_val + rps_val))
+```
+
+*The `echo: false` option disables the printing of code (only output is displayed).*
