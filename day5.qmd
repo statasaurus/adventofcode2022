@@ -1,0 +1,108 @@
+---
+title: "Day 5"
+format: html
+editor: visual
+---
+
+## Day 5
+
+*After the rearrangement procedure completes, what crate ends up on top of each stack?*
+
+```{r}
+library(tidyverse)
+
+all_data <- read_delim("data/day5.txt", delim = "\n", col_names = FALSE) %>% 
+  pull(X1)
+
+bottom_of_crates <- str_which(all_data, "^[\\d\\s]+$")
+n_stacks <- all_data[bottom_of_crates] %>% 
+  str_extract_all("\\d") %>% 
+  unlist() %>% 
+  as.numeric() %>% 
+  max()
+width <- str_length(all_data[bottom_of_crates])
+crate_mat <- all_data[1:(bottom_of_crates-1)] %>% 
+  map(str_sub, 
+      start = seq(1, width, by = 4), 
+          end = seq(1, width, by = 4)+2) %>% 
+  unlist() %>% 
+  matrix(ncol = n_stacks, byrow = TRUE) 
+
+crates = list()
+for (i in 1:ncol(crate_mat)){
+  crates[[i]] = crate_mat[seq(nrow(crate_mat), 1),i] %>% 
+    discard(~.=="   ")
+}
+
+actions <- tibble(phrase = all_data[bottom_of_crates+1:length(all_data)]) %>% 
+  mutate(n_crates = str_extract(phrase, "(?<=move )\\d+") %>% as.numeric(),
+         start_loc = str_extract(phrase, "(?<=from )\\d")%>% as.numeric(),
+         end_loc = str_extract(phrase, "(?<=to )\\d")%>% as.numeric()
+         ) %>% 
+  filter(!is.na(phrase))
+```
+
+You can add options to executable code like this
+
+```{r}
+move_crates <- function(crates, n, start, finish){
+  top_row = length(crates[[start]])
+  to_move = crates[[start]][top_row:(top_row-n+1)]
+  crates[[start]] = crates[[start]][1:(top_row-n)]
+  crates[[finish]] = c(crates[[finish]], to_move)
+  crates
+}
+
+```
+
+move everything
+
+```{r}
+
+for(i in 1:nrow(actions)){
+  crates <- move_crates(crates, actions$n_crates[i],
+              actions$start_loc[i], 
+              actions$end_loc[i]
+  )
+}
+
+
+crates %>% 
+  map_chr(~.[length(.)]) %>% 
+  str_remove_all("\\[|\\]") %>% 
+  str_c(collapse = "")
+```
+
+### PART 2
+
+The same, but keep in the same order
+
+```{r}
+move_crates_9001 <- function(crates, n, start, finish){
+  top_row = length(crates[[start]])
+  to_move = crates[[start]][(top_row-n+1):top_row]
+  crates[[start]] = crates[[start]][1:(top_row-n)]
+  crates[[finish]] = c(crates[[finish]], to_move)
+  crates
+}
+
+crates = list()
+for (i in 1:ncol(crate_mat)){
+  crates[[i]] = crate_mat[seq(nrow(crate_mat), 1),i] %>% 
+    discard(~.=="   ")
+}
+
+
+for(i in 1:nrow(actions)){
+  crates <- move_crates_9001(crates, actions$n_crates[i],
+              actions$start_loc[i], 
+              actions$end_loc[i]
+  )
+}
+
+
+crates %>% 
+  map_chr(~.[length(.)]) %>% 
+  str_remove_all("\\[|\\]") %>% 
+  str_c(collapse = "")
+```

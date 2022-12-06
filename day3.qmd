@@ -1,0 +1,52 @@
+---
+title: "day3"
+format: html
+editor: visual
+---
+
+## Day 3 in R
+
+*What is the sum of the priorities of those item types?*
+
+```{r}
+library(tidyverse)
+df <- read_delim("data/day3.txt", "\n", col_names = FALSE, show_col_types = FALSE)
+
+
+df_tidy <- df %>% 
+  mutate(bag_len = str_count(X1),
+         comp1 = str_sub(X1, start = 1, end = bag_len/2) %>% 
+           str_split(""), 
+         comp2 = str_sub(X1, start = bag_len/2+1, end = -1) %>% 
+           str_split(""),
+         common = map2_chr(comp1, comp2, intersect),
+         val = match(common, c(letters, LETTERS))
+  )
+
+df_tidy %>% 
+  summarise(total = sum(val))
+```
+
+## PART 2 
+
+```{r}
+
+df %>% 
+  mutate(group_num = rep(seq(1, nrow(df)/3), each = 3),
+         bag_items = str_split(X1, "")
+         ) %>% 
+  group_by(group_num) %>% 
+  mutate(elf_num = row_number()) %>% 
+  select(-X1) %>% 
+  pivot_wider(names_from = elf_num,
+              names_prefix = "elf",
+              values_from = bag_items) %>% 
+  mutate(badge  = map2(elf1, elf2, intersect) %>% 
+           map2_chr(elf3, intersect),
+         val = match(badge, c(letters, LETTERS))) %>% 
+  ungroup() %>% 
+  summarise(total = sum(val))
+  
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

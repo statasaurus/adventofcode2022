@@ -38,3 +38,8 @@ tot_cal_per %>%
 ```
 
 ## 
+
+```{python}
+test = open("data/day1.txt").read().split("\n")
+for i in test 
+```

@@ -1,0 +1,45 @@
+---
+title: "day4"
+format: html
+editor: visual
+---
+
+## Part 1 R
+
+*In how many assignment pairs does one range fully contain the other?*
+
+```{r}
+library(tidyverse)
+df <- read_delim("data/day4.txt", col_names = FALSE, show_col_types = FALSE) %>% 
+  mutate(group_num = row_number()) %>% 
+  pivot_longer(-group_num, names_to = "elf_num", values_to = "assignment") %>% 
+  mutate(start_seq = str_extract(assignment, "^\\d+") %>% as.numeric(),
+         end_seq = str_extract(assignment, "\\d+$") %>% as.numeric()) %>%
+  select(-assignment) %>%
+  pivot_wider(names_from = elf_num,
+              values_from = contains("seq")) %>%
+  mutate(within = case_when(
+    start_seq_X1 >= start_seq_X2 & end_seq_X1 <= end_seq_X2 ~ TRUE,
+    start_seq_X2 >= start_seq_X1 & end_seq_X2 <= end_seq_X1 ~ TRUE,
+    TRUE ~ FALSE
+  ))
+
+df %>%
+  summarise(total = sum(within))
+  
+```
+
+*In how many assignment pairs do the ranges overlap?*
+
+```{r}
+
+df %>%
+  mutate(overlap = case_when(
+    start_seq_X1 <= start_seq_X2 & end_seq_X1 >= start_seq_X2 ~ TRUE,
+    start_seq_X2 <= start_seq_X1 & end_seq_X2 >= start_seq_X1 ~ TRUE,
+    TRUE ~ FALSE
+  )) %>%
+  summarise(total = sum(overlap))
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
