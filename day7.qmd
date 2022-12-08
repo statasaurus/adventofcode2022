@@ -1,0 +1,86 @@
+---
+title: "day7"
+format: html
+editor: visual
+---
+
+## Day 7
+
+Find all of the directories with a total size of at most 100000. *What is the sum of the total sizes of those directories?*
+
+```{r}
+library(tidyverse)
+library(tidyr)
+steps <- read_delim("data/day7.txt", delim = "\n", col_names = FALSE) %>% 
+  pull(X1)
+
+loc_df <- tibble(steps = steps) %>% 
+  mutate(loc_grp = if_else(str_detect(steps, "cd\\s"), row_number(),
+                                      NA_integer_),
+         loc = str_extract(steps, "(?<= cd ).+")) %>% 
+  fill(loc, loc_grp, .direction = "down") %>% 
+  filter(steps != "$ ls") %>% 
+  nest(test = steps) %>% 
+  mutate(full_loc = "")
+
+loc = ""
+for(i in 1:nrow(loc_df)){
+  if(loc_df$loc[i] == "/"){
+    loc = "/"
+  } else if(loc_df$loc[i] == ".."){
+    loc = str_remove(loc, "\\w+\\/$")
+  } else{
+    loc = paste0(loc, loc_df$loc[i], "/") 
+  }
+  loc_df$full_loc[i] = loc
+  
+}
+
+n_levels = max(str_count(loc_df$full_loc, "/"))
+dir_size <- loc_df %>% 
+  select(full_loc, test) %>% 
+  unnest(test) %>% 
+  filter(!str_detect(steps, "cd\\s|dir\\s")) %>% 
+  group_by(full_loc) %>% 
+  summarise(file_size = str_extract(steps, "\\d+") %>% 
+              as.numeric() %>% 
+              sum(na.rm = TRUE)) %>% 
+  separate(col = full_loc, into= letters[1:n_levels],
+           sep = "/") %>% 
+  mutate(a = "top")
+
+answer = tibble()
+for(i in 1:(ncol(dir_size)-1)){
+  col_to <- sym(names(dir_size)[i])
+  answer <- dir_size %>% 
+    select(a:!!col_to, file_size) %>% 
+    filter(!is.na(!!col_to) & !!col_to != "") %>%
+    group_by(!!!names(dir_size)[1:i] %>% map(sym)) %>% 
+    summarise(total = sum(file_size), .groups = "drop") %>% 
+    bind_rows(answer)
+}
+  
+answer %>% 
+  filter(total < 100000) %>% 
+  summarise(sum(total))
+  
+```
+
+Find the smallest directory that, if deleted, would free up enough space on the filesystem to run the update. *What is the total size of that directory?*
+
+```{r}
+total = 70000000
+need = 30000000
+used = answer %>% 
+  filter(if_all(b:j, ~is.na(.)|.=="")) %>% 
+  pull(total)
+to_delete <- need - (total-used)
+
+answer %>% 
+  filter(total >= to_delete) %>% 
+  arrange(total) %>% 
+  slice(1) %>% 
+  pull(total)
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

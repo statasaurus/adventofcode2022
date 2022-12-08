@@ -1,0 +1,52 @@
+---
+title: "day 6"
+format: html
+editor: visual
+---
+
+## Day 6
+
+*How many characters need to be processed before the first start-of-packet marker is detected?*
+
+```{r}
+library(tidyverse)
+
+df <- read_lines("data/day6.txt") %>% 
+  str_split("") %>% 
+  unlist() %>% 
+  tibble(val = .)
+
+combo_df <- df %>%
+  mutate(loc = row_number(),
+    combo = str_c(val, lag(val, n = 1), lag(val, n = 2), lag(val, n = 3)) %>%
+           str_split(""),
+         n = map_int(combo, ~length(unique(.))))
+
+combo_df %>% 
+  filter(n == 4) %>% 
+  summarise(start = min(loc))
+```
+
+You can add options to executable code like this
+
+```{r}
+
+combo_lag <- function(vec, n = 2){
+  new = vec
+  for(i in 1:(n-1)){
+    new = str_c(new, lag(vec, n = i))
+  }
+  new
+}
+
+combo_df <- df %>%
+  mutate(loc = row_number(),
+    combo = combo_lag(vec, 14) %>% str_split(""),
+         n = map_int(combo, ~length(unique(.))))
+
+combo_df %>% 
+  filter(n == 14) %>% 
+  summarise(start = min(loc))
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
