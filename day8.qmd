@@ -1,0 +1,83 @@
+---
+title: "day8"
+format: html
+editor: visual
+---
+
+## Day 8 Part 1
+
+*how many trees are visible from outside the grid?*
+
+```{r}
+library(tidyverse)
+grid_df <- read_delim("data/day8.txt", delim = "\n",
+                   col_names = FALSE) %>% 
+  pull(X1)%>% 
+  str_split("") %>% 
+  do.call(rbind, .) %>% 
+  as_tibble() %>% 
+  mutate(row = row_number()) %>% 
+  pivot_longer(-row) %>% 
+  mutate(col = str_extract(name, "\\d+") %>% as.numeric(),
+         value = as.numeric(value)) %>% 
+  select(-name) 
+
+is_vis_df <- grid_df %>% 
+  group_by(row) %>% 
+  arrange(row, col) %>% 
+  mutate(left_right = replace_na(lag(cummax(value)), -1),
+         left_vis = value > left_right) %>% 
+  arrange(row, desc(col)) %>% 
+  mutate(right_left = replace_na(lag(cummax(value)), -1),
+         right_vis  = value > right_left) %>% 
+  group_by(col) %>% 
+  arrange(col, row) %>% 
+  mutate(top = replace_na(lag(cummax(value)), -1),
+         top_vis = value > top) %>% 
+  arrange(col, desc(row)) %>% 
+  mutate(bottom = replace_na(lag(cummax(value)), -1),
+         bottom_vis = value > bottom,
+         is_vis = left_vis|right_vis|top_vis|bottom_vis) %>% 
+  ungroup()
+
+
+is_vis_df %>% 
+  summarise(total = sum(is_vis))
+```
+
+You can add options to executable code like this
+
+```{r}
+grid <- grid_df %>% 
+  arrange(col, row) %>% 
+  pull(value) %>% 
+  matrix(ncol = max(grid_df$col), nrow =max(grid_df$row))
+
+next_heighest <- function(vec, val){
+  out <- match(TRUE, vec >= val)
+  if(is.na(out)){
+    out <- length(vec)
+  }
+  out
+}
+
+row = 2; col = 2
+all_scores = c()
+for(row in 2:(nrow(grid)-1)){
+  for(col in 2:(ncol(grid)-1)){
+    val = grid[row, col]
+    up <- next_heighest(grid[col,(row-1):1], val)
+    down <- next_heighest(grid[col,(row+1):nrow(grid)], val)
+    left <- next_heighest(grid[(col-1):1,row], val)
+    right <- next_heighest(grid[(col+1):ncol(grid),row], val)
+    scenic_score <- up*down*left*right
+    all_scores = c(all_scores, 
+                      scenic_score
+                      )
+  }
+}
+
+max(all_scores)
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
